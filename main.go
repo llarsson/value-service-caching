@@ -16,6 +16,7 @@ import (
 
 const (
 	upstreamAddrKey = "VALUE_SERVICE_ADDR"
+	csvFileName     = "data.csv"
 )
 
 func main() {
@@ -31,7 +32,13 @@ func main() {
 
 	cachingInterceptor := interceptors.InmemoryCachingInterceptor{Cache: *cache.New(10*time.Second, 60*time.Second)}
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(cachingInterceptor.UnaryServerInterceptor()))
+	csvFile, err := os.Create(csvFileName)
+	if err != nil {
+		log.Fatalf("Could not open CSV file (%s) for writing", csvFileName)
+	}
+	defer csvFile.Close()
+
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(cachingInterceptor.UnaryServerInterceptor(log.New(csvFile, "", 0))))
 
 	upstreamAddr, ok := os.LookupEnv(upstreamAddrKey)
 	if !ok {
